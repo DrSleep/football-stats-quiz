@@ -1,3 +1,5 @@
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://football-quiz.streamlit.app)
+
 # :wave: Welcome to the quiz game based on football stats!
 
 In this simple game your will be asked to predict the results of 5 football matches based on a subset of statistics provided for each match.
