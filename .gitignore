@@ -1,0 +1,16 @@
+.DS_Store
+.cache/
+__pycache__/
+
+*.m4v
+*.mp4
+*.webm
+
+reps/
+sandbox/
+
+bits_and_pieces
+
+PROGRESS.md
+
+.results.txt
