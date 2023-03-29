@@ -35,7 +35,7 @@ if __name__ == "__main__":
         )
 
     scores_placeholder = st.columns([1, 5, 1])[1].empty()
-    button_placeholder = st.empty()
+    start_button_placeholder, all_scores_button_placeholder = st.empty(), st.empty()
 
     game = StatsQuizGame(
         session_state=SessionStateWithDefaults(
@@ -50,9 +50,12 @@ if __name__ == "__main__":
                 "current_score": 0,
                 "total_score": 0,
                 "best_score": 0,
+                "per_round_scores": [],
+                "showing_per_round_scores": False,
             },
         ),
-        start_button_placeholder=button_placeholder,
+        start_button_placeholder=start_button_placeholder,
+        all_scores_button_placeholder=all_scores_button_placeholder,
         scores_placeholder=scores_placeholder,
         dataset=create_dataset(),
     )

@@ -7,10 +7,12 @@ from .utils import SessionStateWithDefaults, patch_markdown_image
 
 
 class StatsQuizGame:
+    # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         session_state: SessionStateWithDefaults,
         start_button_placeholder: T.Any,
+        all_scores_button_placeholder: T.Any,
         scores_placeholder: T.Any,
         dataset: StatsDataset,
         max_examples: int = 5,
@@ -20,6 +22,7 @@ class StatsQuizGame:
         self._session_state = session_state
         self._scores_placeholder = scores_placeholder
         self._start_button_placeholder = start_button_placeholder
+        self._all_scores_button_placeholder = all_scores_button_placeholder
         self._dataset = dataset
         self._max_examples = max_examples
         self._sidebar_file = sidebar_file
@@ -57,6 +60,7 @@ class StatsQuizGame:
         if not self._session_state.started:
             return
         self._start_button_placeholder.empty()
+        self._all_scores_button_placeholder.empty()
 
         with self._scores_placeholder:
             self._display_scores()
@@ -83,6 +87,13 @@ class StatsQuizGame:
                 self._start_button_placeholder.button(
                     "Start a new game", on_click=self._on_game_start
                 )
+                if self._session_state.showing_per_round_scores:
+                    return
+                self._all_scores_button_placeholder.button(
+                    "Show per-round scores",
+                    on_click=self._show_per_round_scores,
+                    args=(st.columns([1, 5, 1])[1],),
+                )
                 return
 
         else:
@@ -105,12 +116,16 @@ class StatsQuizGame:
                     )
 
     def _display_stats_data(self, stats):
+        if self._session_state.showing_per_round_scores:
+            return
         markdown = "### " + (
             f'<div class="statsData"><span> {"<br><br>".join(stats)} </span></div>'
         )
         st.markdown(markdown, unsafe_allow_html=True)
 
     def _display_results(self):
+        if self._session_state.showing_per_round_scores:
+            return
         home_gt, away_gt = self._session_state.sample[0]
         lines = []
         lines.append(
@@ -131,6 +146,7 @@ class StatsQuizGame:
         markdown = "### " + (
             f'<div class="boxResults"><span> {"<br>".join(lines)} </span></div>'
         )
+        self._session_state.per_round_scores.append(markdown)
         st.markdown(markdown, unsafe_allow_html=True)
 
     def _display_scores(self):
@@ -163,3 +179,9 @@ class StatsQuizGame:
         self._session_state.best_score = max(
             self._session_state.best_score, self._session_state.total_score
         )
+
+    def _show_per_round_scores(self, container):
+        for per_round_score in self._session_state.per_round_scores:
+            with container:
+                st.markdown(per_round_score, unsafe_allow_html=True)
+        self._session_state.showing_per_round_scores = True
