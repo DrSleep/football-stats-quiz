@@ -34,8 +34,26 @@ def get_match_info(match_id, comp_id, season_id):
     return sb.matches(comp_id, season_id).query(f"match_id == {match_id}")
 
 
-def get_stats(match_id, home_team, away_team, off_target_shot_types, possession_types):
+def get_stats(
+    match_id,
+    home_team,
+    away_team,
+    off_target_shot_types,
+    possession_types,
+    home_goals,
+    away_goals,
+    *extra_info,
+):
     all_events = sb.events(match_id=match_id)
+
+    # Filter out events from period 5 -- penalty shoot-out
+    all_events = all_events[all_events.period < 5]
+
+    # Some of the goals can be explained by own goals
+    own_goal_for_events = all_events[all_events.type == "Own Goal For"]
+    if len(own_goal_for_events) > 0:
+        home_goals -= len(own_goal_for_events[own_goal_for_events.team == home_team])
+        away_goals -= len(own_goal_for_events[own_goal_for_events.team == away_team])
 
     shots_events = all_events[all_events.type == "Shot"][
         ["shot_outcome", "shot_statsbomb_xg", "team"]
@@ -47,15 +65,34 @@ def get_stats(match_id, home_team, away_team, off_target_shot_types, possession_
     )[["possession_team", "duration"]]
 
     shots_stats = get_shots_stats(
-        shots_events, home_team, away_team, off_target_shot_types
+        shots_events,
+        home_team,
+        away_team,
+        off_target_shot_types,
+        home_goals,
+        away_goals,
+        match_id,
+        *extra_info,
     )
     possession_stats = get_possession_stats(possession_events, home_team, away_team)
     return {**shots_stats, **possession_stats}
 
 
-def get_shots_stats(shots, home_team, away_team, off_target_shot_types):
+def get_shots_stats(
+    shots,
+    home_team,
+    away_team,
+    off_target_shot_types,
+    home_goals,
+    away_goals,
+    *extra_info,
+):
     home_shots = shots[shots.team == home_team]
     away_shots = shots[shots.team == away_team]
+
+    # Validate the shots data
+    assert len(home_shots.query("shot_outcome == 'Goal'")) == home_goals, extra_info
+    assert len(away_shots.query("shot_outcome == 'Goal'")) == away_goals, extra_info
 
     total_home_shots = len(home_shots)
     on_target_home_shots = len(
@@ -106,7 +143,15 @@ def get_match_stats(
     home_goals, away_goals = match.home_score, match.away_score
 
     stats = get_stats(
-        match_id, home_team, away_team, off_target_shot_types, possession_types
+        match_id,
+        home_team,
+        away_team,
+        off_target_shot_types,
+        possession_types,
+        home_goals,
+        away_goals,
+        comp_id,
+        season_id,
     )
 
     date = match.match_date
